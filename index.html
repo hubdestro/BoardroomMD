@@ -295,17 +295,16 @@
   .preview-empty-title { font-size: 14px; font-weight: 500; color: #7a92a8; }
   .preview-empty-sub { font-size: 12px; color: #6a8096; }
 
-  /* Cover page — full-page height to match the DOCX page */
+  /* Cover page — full A4-proportioned height */
   .doc-cover {
     width: 100%; max-width: 660px;
-    height: 933px; /* 660px wide × (1122/793) aspect ratio = A4/Letter page proportion */
+    height: 933px;
     border-radius: 4px 4px 0 0;
     position: relative; overflow: hidden;
-    display: flex; flex-direction: column; justify-content: flex-end;
-    padding: 52px 60px; flex-shrink: 0;
+    display: flex; flex-direction: column;
+    padding: 0; flex-shrink: 0;
   }
-  .doc-cover h1 { font-size: 32px; font-weight: 700; line-height: 1.2; margin-bottom: 8px; }
-  .doc-cover-meta { font-size: 14px; margin-top: 4px; }
+  .doc-cover h1 { margin: 0; }
 
   /* Document body page */
   .doc-page {
@@ -320,11 +319,58 @@
      TEMPLATE PREVIEW STYLES
   ============================================================ */
 
-  /* ── Corporate ── */
-  .tpl-corporate .doc-cover { background: #0F4C81; }
-  .tpl-corporate .doc-cover h1 { color: #fff; }
-  .tpl-corporate .doc-cover-meta { color: rgba(255,255,255,.65); }
+  /* ── Corporate Cover ── */
+  .tpl-corporate .doc-cover {
+    background: linear-gradient(165deg, #071e38 0%, #0c3d6e 50%, #0F4C81 100%);
+  }
+  .tpl-corporate .cov-topbar {
+    height: 5px; flex-shrink: 0;
+    background: linear-gradient(90deg, #3a8bc4 0%, #9cd3f7 50%, #3a8bc4 100%);
+  }
+  .tpl-corporate .cov-inner {
+    flex: 1; display: flex; flex-direction: column;
+    justify-content: space-between;
+    padding: 36px 56px 52px; position: relative; overflow: hidden;
+  }
+  /* Large decorative circle top-right */
+  .tpl-corporate .cov-inner::before {
+    content: ''; position: absolute; top: -80px; right: -80px;
+    width: 380px; height: 380px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  /* Second circle ring */
+  .tpl-corporate .cov-inner::after {
+    content: ''; position: absolute; top: 70px; right: 20px;
+    width: 210px; height: 210px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.07);
+    pointer-events: none;
+  }
+  .tpl-corporate .cov-eyebrow {
+    font-size: 10px; font-weight: 700; letter-spacing: .2em;
+    text-transform: uppercase; color: rgba(255,255,255,.3);
+    position: relative;
+  }
+  .tpl-corporate .cov-mid {
+    display: flex; flex-direction: column; position: relative;
+  }
+  .tpl-corporate .cov-rule {
+    width: 44px; height: 3px; background: #5bb3e8; margin-bottom: 20px; border-radius: 2px;
+  }
+  .tpl-corporate .doc-cover h1 {
+    font-size: 38px; font-weight: 800; color: #fff;
+    line-height: 1.1; margin: 0 0 18px !important; letter-spacing: -.5px;
+  }
+  .tpl-corporate .cov-meta-line {
+    font-size: 13px; color: rgba(255,255,255,.5);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .tpl-corporate .cov-sep {
+    width: 3px; height: 3px; border-radius: 50%;
+    background: rgba(255,255,255,.3);
+  }
 
+  /* ── Corporate Body ── */
   .tpl-corporate .doc-page {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 13px; color: #1a1a1a; line-height: 1.65;
@@ -352,11 +398,57 @@
   .tpl-corporate .doc-page td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; }
   .tpl-corporate .doc-page tr:nth-child(even) td { background: #f8fafc; }
 
-  /* ── Modern ── */
-  .tpl-modern .doc-cover { background: linear-gradient(150deg, #0f1923 0%, #1b2d22 100%); }
-  .tpl-modern .doc-cover h1 { color: #22c55e; font-size: 34px; font-weight: 300; letter-spacing: -1px; }
-  .tpl-modern .doc-cover-meta { color: rgba(255,255,255,.45); }
+  /* ── Modern Cover ── */
+  .tpl-modern .doc-cover {
+    background: linear-gradient(160deg, #07100a 0%, #0a160c 60%, #0d1e11 100%);
+  }
+  .tpl-modern .cov-topbar {
+    height: 5px; flex-shrink: 0; background: #22c55e;
+  }
+  .tpl-modern .cov-inner {
+    flex: 1; display: flex; flex-direction: column;
+    justify-content: space-between;
+    padding: 36px 56px 52px; position: relative; overflow: hidden;
+  }
+  /* Diagonal grid lines */
+  .tpl-modern .cov-inner::before {
+    content: ''; position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(
+      -45deg, transparent, transparent 58px,
+      rgba(34,197,94,.035) 58px, rgba(34,197,94,.035) 59px
+    );
+    pointer-events: none;
+  }
+  /* Glowing circle accent top-right */
+  .tpl-modern .cov-inner::after {
+    content: ''; position: absolute; top: -60px; right: -60px;
+    width: 320px; height: 320px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(34,197,94,.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .tpl-modern .cov-eyebrow {
+    font-size: 10px; font-weight: 700; letter-spacing: .2em;
+    text-transform: uppercase; color: rgba(34,197,94,.45);
+    position: relative;
+  }
+  .tpl-modern .cov-mid { display: flex; flex-direction: column; position: relative; }
+  .tpl-modern .cov-dash {
+    width: 32px; height: 2px; background: #22c55e; margin-bottom: 18px; border-radius: 1px;
+  }
+  .tpl-modern .doc-cover h1 {
+    font-size: 42px; font-weight: 200; color: #22c55e;
+    line-height: 1.1; margin: 0 0 20px !important; letter-spacing: -1px;
+  }
+  .tpl-modern .cov-meta-line {
+    font-size: 12px; color: rgba(255,255,255,.35);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .tpl-modern .cov-sep {
+    width: 3px; height: 3px; border-radius: 50%;
+    background: rgba(255,255,255,.2);
+  }
 
+  /* ── Modern Body ── */
   .tpl-modern .doc-page {
     font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
     font-size: 13px; color: #111; line-height: 1.85;
@@ -377,41 +469,54 @@
   .tpl-modern .doc-page th { border-bottom: 2px solid #22c55e; padding: 8px 10px; text-align: left; color: #22c55e; font-weight: 600; }
   .tpl-modern .doc-page td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; }
 
-  /* ── Premium ── */
+  /* ── Premium Cover ── */
   .tpl-premium .doc-cover {
-    min-height: 420px;
-    background-color: #2d3a2e; /* dark fallback */
-    background-size: cover; background-position: center top;
+    background: linear-gradient(170deg, #1a2b1c 0%, #2d4530 40%, #4a5f3e 70%, #c8d8be 100%);
+    justify-content: center; align-items: center;
   }
-  /* Dark scrim so white text is always readable over any background */
+  /* Subtle noise-like vignette */
   .tpl-premium .doc-cover::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(10,18,10,.80) 0%, rgba(0,0,0,.15) 55%);
-    z-index: 0;
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 55%, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 72%);
+    pointer-events: none;
   }
-  .tpl-premium .doc-cover > div { position: relative; z-index: 1; }
-  .tpl-premium .doc-cover h1 { color: #fff; text-shadow: 0 2px 16px rgba(0,0,0,.6); }
-  .tpl-premium .doc-cover-meta { color: rgba(255,255,255,.72); }
-
-  /* Same for corporate — solid blue but gradient scrim adds depth */
-  .tpl-corporate .doc-cover::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 50%);
-    z-index: 0;
+  .tpl-premium .cov-inner {
+    flex: unset; display: flex; flex-direction: column;
+    align-items: center; text-align: center;
+    padding: 0 72px; position: relative; z-index: 1; width: 100%;
   }
-  .tpl-corporate .doc-cover > div { position: relative; z-index: 1; }
-
-  /* Same for modern */
-  .tpl-modern .doc-cover::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 55%);
-    z-index: 0;
+  .tpl-premium .cov-ornament {
+    display: flex; align-items: center; gap: 14px;
+    color: rgba(255,255,255,.45); margin-bottom: 36px;
+    font-size: 13px; letter-spacing: 4px;
   }
-  .tpl-modern .doc-cover > div { position: relative; z-index: 1; }
+  .tpl-premium .cov-ornament::before,
+  .tpl-premium .cov-ornament::after {
+    content: ''; flex: 1; height: 1px;
+    background: rgba(255,255,255,.2); min-width: 56px;
+  }
+  .tpl-premium .doc-cover h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 36px; font-weight: 700; color: #fff;
+    line-height: 1.2; margin: 0 0 10px !important;
+    text-shadow: 0 2px 24px rgba(0,0,0,.5);
+  }
+  .tpl-premium .cov-rule {
+    width: 56px; height: 1px; background: rgba(255,255,255,.35);
+    margin: 18px auto 18px;
+  }
+  .tpl-premium .cov-meta-line {
+    font-size: 14px; color: rgba(255,255,255,.65);
+    font-style: italic; font-family: Georgia, serif;
+  }
+  .tpl-premium .cov-date-line {
+    font-size: 11px; color: rgba(255,255,255,.4);
+    margin-top: 8px; letter-spacing: .12em;
+    text-transform: uppercase; font-style: normal;
+    font-family: 'Inter', sans-serif;
+  }
 
+  /* ── Premium Body ── */
   .tpl-premium .doc-page {
     font-family: Georgia, 'Times New Roman', serif;
     font-size: 13px; color: #454F3C; line-height: 1.75;
@@ -750,38 +855,131 @@ Click **Generate .docx** to download your styled Word document."></textarea>
 
   function corporateCoverImg() {
     return canvasCoverPNG(793, 1122, (ctx, w, h) => {
-      // Solid blue base
-      ctx.fillStyle = '#0F4C81';
-      ctx.fillRect(0, 0, w, h);
-      // Dark bottom gradient to add depth
-      const g = ctx.createLinearGradient(0, h * 0.5, 0, h);
-      g.addColorStop(0, 'rgba(0,0,0,0)');
-      g.addColorStop(1, 'rgba(0,0,0,0.38)');
+      // Deep navy diagonal gradient
+      const g = ctx.createLinearGradient(0, 0, w * 0.4, h);
+      g.addColorStop(0, '#071e38');
+      g.addColorStop(0.5, '#0c3d6e');
+      g.addColorStop(1, '#0F4C81');
       ctx.fillStyle = g;
-      ctx.fillRect(0, h * 0.5, w, h * 0.5);
-      // Subtle lighter top stripe
-      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillRect(0, 0, w, h);
+
+      // Large radial circle top-right
+      const cg = ctx.createRadialGradient(w + 60, -60, 0, w + 60, -60, 480);
+      cg.addColorStop(0, 'rgba(255,255,255,0.09)');
+      cg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = cg;
+      ctx.fillRect(0, 0, w, h);
+
+      // Circle ring outline
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(w - 30, 110, 210, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Second ring
+      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(w - 30, 110, 300, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Light accent bar at top
+      const bar = ctx.createLinearGradient(0, 0, w, 0);
+      bar.addColorStop(0, '#3a8bc4');
+      bar.addColorStop(0.5, '#9cd3f7');
+      bar.addColorStop(1, '#3a8bc4');
+      ctx.fillStyle = bar;
       ctx.fillRect(0, 0, w, 6);
+
+      // Blue accent rule just above text area (~63% down the page ≈ 708px)
+      ctx.fillStyle = '#5bb3e8';
+      ctx.beginPath();
+      ctx.roundRect(75, 700, 55, 4, 2);
+      ctx.fill();
     });
   }
 
   function modernCoverImg() {
     return canvasCoverPNG(793, 1122, (ctx, w, h) => {
-      // Dark diagonal gradient
+      // Very dark gradient
       const g = ctx.createLinearGradient(0, 0, w, h);
-      g.addColorStop(0, '#0f1923');
-      g.addColorStop(1, '#162411');
+      g.addColorStop(0, '#07100a');
+      g.addColorStop(0.6, '#0a160c');
+      g.addColorStop(1, '#0d1e11');
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
-      // Green accent bar at top
+
+      // Diagonal grid lines
+      ctx.strokeStyle = 'rgba(34,197,94,0.04)';
+      ctx.lineWidth = 1;
+      for (let i = -h; i < w + h; i += 80) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + h, h); ctx.stroke();
+      }
+
+      // Green radial glow top-right
+      const glow = ctx.createRadialGradient(w + 50, -50, 0, w + 50, -50, 400);
+      glow.addColorStop(0, 'rgba(34,197,94,0.09)');
+      glow.addColorStop(1, 'rgba(34,197,94,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, w, h);
+
+      // Green top bar
       ctx.fillStyle = '#22c55e';
-      ctx.fillRect(0, 0, w, 7);
-      // Dark bottom scrim
-      const s = ctx.createLinearGradient(0, h * 0.55, 0, h);
-      s.addColorStop(0, 'rgba(0,0,0,0)');
-      s.addColorStop(1, 'rgba(0,0,0,0.5)');
-      ctx.fillStyle = s;
-      ctx.fillRect(0, h * 0.55, w, h * 0.45);
+      ctx.fillRect(0, 0, w, 6);
+
+      // Green dash accent ~63% down
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.roundRect(75, 700, 38, 3, 1.5);
+      ctx.fill();
+    });
+  }
+
+  function premiumCoverImg() {
+    return canvasCoverPNG(793, 1122, (ctx, w, h) => {
+      // Rich sage forest gradient
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0,   '#1a2b1c');
+      g.addColorStop(0.4, '#2d4530');
+      g.addColorStop(0.7, '#4a5f3e');
+      g.addColorStop(1,   '#c8d8be');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle diagonal sheen
+      const sheen = ctx.createLinearGradient(w, 0, 0, h);
+      sheen.addColorStop(0, 'rgba(255,255,255,0.06)');
+      sheen.addColorStop(1, 'rgba(0,0,0,0.08)');
+      ctx.fillStyle = sheen;
+      ctx.fillRect(0, 0, w, h);
+
+      // Center radial vignette to ensure text contrast
+      const vig = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.max(w, h) * 0.65);
+      vig.addColorStop(0, 'rgba(0,0,0,0.38)');
+      vig.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = vig;
+      ctx.fillRect(0, 0, w, h);
+
+      // Thin horizontal ornament line at mid-page
+      const mx = w / 2, my = h * 0.53;
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(mx - 120, my); ctx.lineTo(mx - 24, my); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mx + 24, my); ctx.lineTo(mx + 120, my); ctx.stroke();
+
+      // Diamond ornament
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.save();
+      ctx.translate(mx, my - h * 0.07);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillRect(-5, -5, 10, 10);
+      ctx.restore();
+
+      // Thin rule below text area
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(mx - 44, my + 120); ctx.lineTo(mx + 44, my + 120); ctx.stroke();
     });
   }
 
@@ -939,11 +1137,11 @@ Click **Generate .docx** to download your styled Word document."></textarea>
         },
         paragraphStyles: [
           { id:'BMCoverTitle', name:'BM Cover Title', basedOn:'Normal', next:'Normal', quickFormat:true,
-            run:{ size:80, bold:true, color:'FFFFFF' },
-            paragraph:{ spacing:{before:10080,after:320}, alignment:window.docx.AlignmentType.LEFT } },
+            run:{ size:76, bold:true, color:'FFFFFF' },
+            paragraph:{ spacing:{before:9360,after:280}, alignment:window.docx.AlignmentType.CENTER } },
           { id:'BMCoverSub', name:'BM Cover Sub', basedOn:'Normal', next:'Normal', quickFormat:true,
-            run:{ size:32, color:'DDDDDD' },
-            paragraph:{ spacing:{before:160,after:120}, alignment:window.docx.AlignmentType.LEFT } },
+            run:{ size:28, color:'DDDDDD', italic:true },
+            paragraph:{ spacing:{before:120,after:100}, alignment:window.docx.AlignmentType.CENTER } },
           { id:'BMH1', name:'BM Heading 1', basedOn:'Normal', next:'Normal', quickFormat:true,
             run:{ font:'Calibri', size:38, bold:false, color:'454F3C' },
             paragraph:{ spacing:{before:400,after:200},
@@ -960,24 +1158,8 @@ Click **Generate .docx** to download your styled Word document."></textarea>
         ]
       },
       sections(els, meta) {
-        const { Paragraph, TextRun, ImageRun, Header, Footer, AlignmentType, PageNumber, SectionType, BorderStyle,
-                HorizontalPositionAlign, VerticalPositionAlign,
-                HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom } = window.docx;
-
-        function b64(s) {
-          const raw = atob(s); const a = new Uint8Array(raw.length);
-          for (let i = 0; i < raw.length; i++) a[i] = raw.charCodeAt(i); return a;
-        }
-
-        const imgBytes = b64(window.AppAssets.coverGradient);
-        const bgImg = new ImageRun({
-          data: imgBytes, transformation:{ width:793, height:1122 },
-          floating:{
-            horizontalPosition:{ relative:HorizontalPositionRelativeFrom.PAGE, align:HorizontalPositionAlign.LEFT },
-            verticalPosition:{ relative:VerticalPositionRelativeFrom.PAGE, align:VerticalPositionAlign.TOP },
-            behindDocument:true, allowOverlap:true
-          }
-        });
+        const { Paragraph, TextRun, Header, Footer, AlignmentType, PageNumber, SectionType, BorderStyle } = window.docx;
+        const bgImg = makeDocxBgImage(premiumCoverImg());
 
         return [
           {
@@ -1053,6 +1235,60 @@ Click **Generate .docx** to download your styled Word document."></textarea>
   let renderTimer;
   function scheduleRender() { clearTimeout(renderTimer); renderTimer = setTimeout(render, 180); }
 
+  function buildCoverHtml(tpl, title, author, date) {
+    const t = esc(title), a = esc(author), d = esc(date);
+    if (tpl === 'corporate') {
+      return `<div class="doc-cover">
+        <div class="cov-topbar"></div>
+        <div class="cov-inner">
+          <div class="cov-eyebrow">BoardroomMD</div>
+          <div class="cov-mid">
+            <div class="cov-rule"></div>
+            <h1>${t}</h1>
+            <div class="cov-meta-line">
+              <span>${a}</span>
+              <span class="cov-sep"></span>
+              <span>${d}</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+    if (tpl === 'modern') {
+      return `<div class="doc-cover">
+        <div class="cov-topbar"></div>
+        <div class="cov-inner">
+          <div class="cov-eyebrow">BoardroomMD</div>
+          <div class="cov-mid">
+            <div class="cov-dash"></div>
+            <h1>${t}</h1>
+            <div class="cov-meta-line">
+              <span>${a}</span>
+              <span class="cov-sep"></span>
+              <span>${d}</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+    if (tpl === 'premium') {
+      return `<div class="doc-cover">
+        <div class="cov-inner">
+          <div class="cov-ornament">◆</div>
+          <h1>${t}</h1>
+          <div class="cov-rule"></div>
+          <div class="cov-meta-line">${a}</div>
+          <div class="cov-date-line">${d}</div>
+        </div>
+      </div>`;
+    }
+    return `<div class="doc-cover"><div class="cov-inner" style="justify-content:flex-end;padding:52px 60px">
+      <h1 style="color:#fff;font-size:32px;font-weight:700">${t}</h1>
+      <div style="color:rgba(255,255,255,.6);font-size:14px;margin-top:6px">${a}</div>
+      <div style="color:rgba(255,255,255,.4);font-size:13px;margin-top:4px">${d}</div>
+    </div></div>`;
+  }
+
   function render() {
     const md     = $('markdownInput').value.trim();
     const tpl    = document.querySelector('input[name="template"]:checked')?.value || 'corporate';
@@ -1072,22 +1308,11 @@ Click **Generate .docx** to download your styled Word document."></textarea>
     empty.style.display = 'none';
     doc.style.display   = 'block';
 
-    let coverBg = '';
-    if (tpl === 'premium' && window.AppAssets?.coverGradient) {
-      coverBg = `background-image:url('data:image/png;base64,${window.AppAssets.coverGradient}');background-size:cover;background-position:center top;`;
-    }
-
     const bodyHtml = window.marked ? marked.parse(md) : '<p>' + esc(md) + '</p>';
 
     doc.innerHTML = `
       <div class="tpl-${tpl}">
-        <div class="doc-cover" style="${coverBg}">
-          <div>
-            <h1>${esc(title)}</h1>
-            <div class="doc-cover-meta">${esc(author)}</div>
-            <div class="doc-cover-meta">${date}</div>
-          </div>
-        </div>
+        ${buildCoverHtml(tpl, title, author, date)}
         <div class="doc-page">${bodyHtml}</div>
       </div>`;
 
