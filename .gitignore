@@ -1,0 +1,44 @@
+# ── System Files ─────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDEs ─────────────────────────────────────────────
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# ── Local Dev ─────────────────────────────────────────
+node_modules/
+package-lock.json
+yarn.lock
+.env
+.env.*
+
+# ── AI / Agent context files ──────────────────────────
+agent.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+COPILOT.md
+*.prompt.md
+*.context.md
+*.ai.md
+
+# ── Generated test / scratch output ──────────────────
+scratch/
+test-*.html
+*.draft.html
+
+# ── Sample / test .docx output ───────────────────────
+*.docx
+
+# ── Base64 / binary blobs ─────────────────────────────
+*.b64
+*.txt
+image1_b64.txt
+
+# ── Logs & temp ───────────────────────────────────────
+*.log
+*.tmp
+*.bak

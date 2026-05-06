@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoardroomMD — Markdown to Professional Documents</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Core libs loaded early so window.docx is available before inline scripts run -->
+  <script src="js/docx.js"></script>
+  <script>window._docxLib = window.docx;</script>
+  <script src="js/assets.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+  <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <style>
+  /* ============================================================
+     RESET
+  ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  button { cursor: pointer; border: none; background: none; font-family: inherit; }
+  a { text-decoration: none; }
+  input, textarea { font-family: inherit; }
+
+  /* ============================================================
+     DESIGN TOKENS
+  ============================================================ */
+  :root {
+    --navy:      #0b1120;
+    --navy-1:    #0f172a;
+    --navy-2:    #1e293b;
+    --navy-3:    #334155;
+    --navy-4:    #475569;
+    --slate:     #64748b;
+    --muted:     #94a3b8;
+    --text:      #e2e8f0;
+    --bright:    #f8fafc;
+    --green:     #22c55e;
+    --green-dk:  #16a34a;
+    --green-bg:  rgba(34,197,94,.08);
+    --green-glow:rgba(34,197,94,.35);
+    --red:       #ef4444;
+    --amber:     #f59e0b;
+    --editor-bg: #0d1117;
+    --preview-bg:#c8d3de;
+    --sidebar-w: 268px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  /* ============================================================
+     LAYOUT
+  ============================================================ */
+  body {
+    background: var(--navy);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* ── Navbar ── */
+  .navbar {
+    height: 52px;
+    background: var(--navy-1);
+    border-bottom: 1px solid var(--navy-2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    flex-shrink: 0;
+    z-index: 50;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-logo {
+    width: 30px; height: 30px;
+    background: linear-gradient(145deg, #22c55e 0%, #15803d 100%);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 1px rgba(34,197,94,.2), 0 2px 8px rgba(34,197,94,.25);
+    flex-shrink: 0;
+  }
+  .nav-logo svg { width: 15px; height: 15px; color: #fff; }
+
+  .nav-title {
+    font-size: 15px; font-weight: 700;
+    letter-spacing: -.3px; color: var(--bright);
+  }
+  .nav-title em { font-style: normal; color: var(--green); }
+
+  .nav-pill {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: .04em; color: var(--green);
+    background: var(--green-bg);
+    border: 1px solid rgba(34,197,94,.18);
+    padding: 2px 8px; border-radius: 20px;
+  }
+
+  .nav-right { display: flex; align-items: center; gap: 8px; }
+
+  .btn-ghost {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    padding: 6px 10px; border-radius: 6px;
+    border: 1px solid transparent; transition: all .15s;
+  }
+  .btn-ghost:hover { color: var(--bright); background: var(--navy-2); border-color: var(--navy-3); }
+
+  .btn-primary {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 13px; font-weight: 600; color: #fff;
+    background: linear-gradient(145deg, #22c55e, #16a34a);
+    padding: 8px 20px; border-radius: 8px;
+    border: 1px solid rgba(34,197,94,.3);
+    box-shadow: 0 1px 3px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.1);
+    transition: all .15s;
+  }
+  .btn-primary:hover { box-shadow: 0 4px 14px var(--green-glow); transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); box-shadow: none; }
+  .btn-primary:disabled { opacity: .55; pointer-events: none; }
+  .btn-primary svg { width: 14px; height: 14px; }
+
+  /* ── Workspace ── */
+  .workspace { flex: 1; display: flex; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--navy-1);
+    border-right: 1px solid var(--navy-2);
+    display: flex; flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .sidebar-body {
+    flex: 1; overflow-y: auto;
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+
+  .field-label {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: .08em; color: var(--navy-4);
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+
+  .field-row label {
+    font-size: 11px; font-weight: 500;
+    color: var(--slate); display: block; margin-bottom: 4px;
+  }
+
+  .field-input {
+    width: 100%;
+    background: var(--navy-2);
+    border: 1px solid var(--navy-3);
+    color: var(--bright);
+    font-size: 13px;
+    padding: 7px 10px;
+    border-radius: 6px; outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field-input::placeholder { color: var(--navy-3); }
+  .field-input:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(34,197,94,.12);
+  }
+
+  /* Template cards */
+  .tpl-cards { display: flex; flex-direction: column; gap: 5px; }
+
+  .tpl-card {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 11px; border-radius: 7px;
+    border: 1px solid var(--navy-2);
+    cursor: pointer; transition: all .15s; user-select: none;
+  }
+  .tpl-card:hover { border-color: var(--navy-3); background: var(--navy-2); }
+  .tpl-card.is-active { border-color: var(--green); background: var(--green-bg); }
+  .tpl-card input { display: none; }
+
+  .tpl-radio {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--navy-3); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .tpl-card.is-active .tpl-radio { border-color: var(--green); background: var(--green); }
+  .tpl-card.is-active .tpl-radio::after {
+    content: ''; width: 4px; height: 4px;
+    border-radius: 50%; background: #fff;
+  }
+
+  .tpl-info { flex: 1; min-width: 0; }
+  .tpl-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .tpl-desc { font-size: 11px; color: var(--slate); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Mini swatches */
+  .tpl-swatch {
+    width: 26px; height: 34px; border-radius: 3px;
+    flex-shrink: 0; position: relative; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,.4);
+  }
+  .sw-corp   { background: #fff; }
+  .sw-corp::before  { content:''; position:absolute; top:4px; left:3px; right:3px; height:3px; background:#0F4C81; border-radius:1px; }
+  .sw-corp::after   { content:''; position:absolute; top:10px; left:3px; right:6px; height:1.5px; background:#e2e8f0; box-shadow:0 3px 0 #e2e8f0,0 6px 0 #e2e8f0; }
+  .sw-modern { background: #fff; }
+  .sw-modern::before { content:''; position:absolute; top:4px; left:3px; right:3px; height:3px; background:#22c55e; border-radius:1px; }
+  .sw-modern::after  { content:''; position:absolute; top:10px; left:3px; right:6px; height:1.5px; background:#e2e8f0; box-shadow:0 4px 0 #e2e8f0,0 8px 0 #e2e8f0; }
+  .sw-prem  { background: #e7ebe4; }
+  .sw-prem::before  { content:''; position:absolute; top:0; left:0; right:0; height:12px; background:linear-gradient(135deg,#454F3C,#677659); }
+  .sw-prem::after   { content:''; position:absolute; top:16px; left:3px; right:6px; height:1.5px; background:#c4cfc0; box-shadow:0 3px 0 #c4cfc0,0 6px 0 #c4cfc0; }
+
+  /* Status bar */
+  .status-bar {
+    padding: 9px 16px; border-top: 1px solid var(--navy-2);
+    display: flex; align-items: center; gap: 7px;
+    font-size: 11px; color: var(--navy-4);
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); flex-shrink: 0; transition: background .3s;
+  }
+  .status-dot.loading { background: var(--amber); animation: blink 1s infinite; }
+  .status-dot.error   { background: var(--red); }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .status-words { margin-left: auto; font-size: 10px; color: var(--navy-3); }
+
+  /* ── Editor pane ── */
+  .editor-pane {
+    flex: 1; display: flex; flex-direction: column;
+    border-right: 1px solid var(--navy-2);
+    background: var(--editor-bg); min-width: 0;
+  }
+
+  .pane-bar {
+    height: 34px; background: var(--navy-1);
+    border-bottom: 1px solid var(--navy-2);
+    display: flex; align-items: center;
+    padding: 0 14px; gap: 5px; flex-shrink: 0;
+  }
+  .pane-bar-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .pane-bar-title {
+    font-size: 11px; font-weight: 500;
+    color: var(--slate); letter-spacing: .05em;
+    margin-left: 8px;
+  }
+
+  #markdownInput {
+    flex: 1; width: 100%;
+    background: var(--editor-bg);
+    border: none; outline: none; resize: none;
+    color: #a9c2e0;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13.5px; line-height: 1.75;
+    padding: 22px 26px; tab-size: 2;
+    caret-color: var(--green);
+  }
+  #markdownInput::placeholder { color: var(--navy-3); }
+  #markdownInput::-webkit-scrollbar { width: 5px; }
+  #markdownInput::-webkit-scrollbar-thumb { background: var(--navy-2); border-radius: 3px; }
+
+  /* ── Preview pane ── */
+  .preview-pane {
+    flex: 1; display: flex; flex-direction: column;
+    background: var(--preview-bg); min-width: 0;
+  }
+
+  .preview-scroll {
+    flex: 1; overflow-y: auto;
+    padding: 28px 20px 48px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .preview-scroll::-webkit-scrollbar { width: 6px; }
+  .preview-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,.2); border-radius: 3px; }
+
+  /* Empty state */
+  .preview-empty {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px; text-align: center;
+    color: #8fa3b8; padding: 40px; min-height: 400px;
+  }
+  .preview-empty svg { width: 44px; height: 44px; opacity: .25; }
+  .preview-empty-title { font-size: 14px; font-weight: 500; color: #7a92a8; }
+  .preview-empty-sub { font-size: 12px; color: #6a8096; }
+
+  /* Cover page — full-page height to match the DOCX page */
+  .doc-cover {
+    width: 100%; max-width: 660px;
+    height: 933px; /* 660px wide × (1122/793) aspect ratio = A4/Letter page proportion */
+    border-radius: 4px 4px 0 0;
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 52px 60px; flex-shrink: 0;
+  }
+  .doc-cover h1 { font-size: 32px; font-weight: 700; line-height: 1.2; margin-bottom: 8px; }
+  .doc-cover-meta { font-size: 14px; margin-top: 4px; }
+
+  /* Document body page */
+  .doc-page {
+    width: 100%; max-width: 660px;
+    background: #fff;
+    padding: 56px 60px;
+    box-shadow: 0 20px 48px rgba(0,0,0,.14), 0 0 0 1px rgba(0,0,0,.06);
+    border-radius: 0 0 4px 4px;
+  }
+
+  /* ============================================================
+     TEMPLATE PREVIEW STYLES
+  ============================================================ */
+
+  /* ── Corporate ── */
+  .tpl-corporate .doc-cover { background: #0F4C81; }
+  .tpl-corporate .doc-cover h1 { color: #fff; }
+  .tpl-corporate .doc-cover-meta { color: rgba(255,255,255,.65); }
+
+  .tpl-corporate .doc-page {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px; color: #1a1a1a; line-height: 1.65;
+  }
+  .tpl-corporate .doc-page h1 {
+    font-size: 19px; font-weight: 700; color: #0F4C81;
+    margin: 22px 0 10px; padding-bottom: 7px;
+    border-bottom: 2px solid #0F4C81;
+  }
+  .tpl-corporate .doc-page h2 { font-size: 15px; font-weight: 700; color: #222; margin: 18px 0 7px; }
+  .tpl-corporate .doc-page h3 { font-size: 13px; font-weight: 700; color: #444; margin: 14px 0 5px; }
+  .tpl-corporate .doc-page p  { margin: 0 0 9px; }
+  .tpl-corporate .doc-page blockquote { border-left: 3px solid #0F4C81; padding-left: 14px; color: #666; font-style: italic; margin: 12px 0; }
+  .tpl-corporate .doc-page ul, .tpl-corporate .doc-page ol { padding-left: 18px; margin: 6px 0; }
+  .tpl-corporate .doc-page li { margin: 3px 0; }
+  .tpl-corporate .doc-page code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #f1f5f9; padding: 1px 5px; border-radius: 3px; color: #c2185b; }
+  .tpl-corporate .doc-page pre { background: #f8fafc; padding: 14px; border-radius: 6px; overflow-x: auto; margin: 10px 0; border-left: 3px solid #0F4C81; }
+  .tpl-corporate .doc-page pre code { background: none; padding: 0; color: #334155; }
+  .tpl-corporate .doc-page hr  { border: none; border-top: 1px solid #e2e8f0; margin: 18px 0; }
+  .tpl-corporate .doc-page a   { color: #0F4C81; text-decoration: underline; }
+  .tpl-corporate .doc-page strong { font-weight: 700; }
+  .tpl-corporate .doc-page em { font-style: italic; }
+  .tpl-corporate .doc-page table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+  .tpl-corporate .doc-page th { background: #0F4C81; color: #fff; padding: 8px 10px; text-align: left; }
+  .tpl-corporate .doc-page td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; }
+  .tpl-corporate .doc-page tr:nth-child(even) td { background: #f8fafc; }
+
+  /* ── Modern ── */
+  .tpl-modern .doc-cover { background: linear-gradient(150deg, #0f1923 0%, #1b2d22 100%); }
+  .tpl-modern .doc-cover h1 { color: #22c55e; font-size: 34px; font-weight: 300; letter-spacing: -1px; }
+  .tpl-modern .doc-cover-meta { color: rgba(255,255,255,.45); }
+
+  .tpl-modern .doc-page {
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px; color: #111; line-height: 1.85;
+  }
+  .tpl-modern .doc-page h1 { font-size: 22px; font-weight: 300; color: #22c55e; margin: 30px 0 14px; letter-spacing: -.5px; }
+  .tpl-modern .doc-page h2 { font-size: 16px; font-weight: 500; color: #222; margin: 22px 0 9px; }
+  .tpl-modern .doc-page h3 { font-size: 14px; font-weight: 600; color: #333; margin: 16px 0 7px; }
+  .tpl-modern .doc-page p  { margin: 0 0 13px; }
+  .tpl-modern .doc-page blockquote { border-left: 3px solid #22c55e; padding-left: 16px; color: #666; font-style: italic; margin: 14px 0; }
+  .tpl-modern .doc-page ul, .tpl-modern .doc-page ol { padding-left: 18px; margin: 8px 0; }
+  .tpl-modern .doc-page li { margin: 5px 0; }
+  .tpl-modern .doc-page code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #f0fdf4; padding: 1px 5px; border-radius: 3px; color: #16a34a; }
+  .tpl-modern .doc-page pre { background: #fafafa; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 12px 0; border-left: 3px solid #22c55e; }
+  .tpl-modern .doc-page pre code { background: none; padding: 0; color: #334155; }
+  .tpl-modern .doc-page hr  { border: none; border-top: 1px solid #f0f0f0; margin: 26px 0; }
+  .tpl-modern .doc-page a   { color: #16a34a; border-bottom: 1px solid #bbf7d0; }
+  .tpl-modern .doc-page table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+  .tpl-modern .doc-page th { border-bottom: 2px solid #22c55e; padding: 8px 10px; text-align: left; color: #22c55e; font-weight: 600; }
+  .tpl-modern .doc-page td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; }
+
+  /* ── Premium ── */
+  .tpl-premium .doc-cover {
+    min-height: 420px;
+    background-color: #2d3a2e; /* dark fallback */
+    background-size: cover; background-position: center top;
+  }
+  /* Dark scrim so white text is always readable over any background */
+  .tpl-premium .doc-cover::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(10,18,10,.80) 0%, rgba(0,0,0,.15) 55%);
+    z-index: 0;
+  }
+  .tpl-premium .doc-cover > div { position: relative; z-index: 1; }
+  .tpl-premium .doc-cover h1 { color: #fff; text-shadow: 0 2px 16px rgba(0,0,0,.6); }
+  .tpl-premium .doc-cover-meta { color: rgba(255,255,255,.72); }
+
+  /* Same for corporate — solid blue but gradient scrim adds depth */
+  .tpl-corporate .doc-cover::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 50%);
+    z-index: 0;
+  }
+  .tpl-corporate .doc-cover > div { position: relative; z-index: 1; }
+
+  /* Same for modern */
+  .tpl-modern .doc-cover::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 55%);
+    z-index: 0;
+  }
+  .tpl-modern .doc-cover > div { position: relative; z-index: 1; }
+
+  .tpl-premium .doc-page {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px; color: #454F3C; line-height: 1.75;
+    background: #f5f7f4;
+  }
+  .tpl-premium .doc-page h1 {
+    font-size: 19px; font-weight: 400; color: #454F3C;
+    margin: 24px 0 12px; padding-bottom: 7px;
+    border-bottom: 1px solid #677659; font-family: Georgia, serif;
+  }
+  .tpl-premium .doc-page h2 { font-size: 15px; font-weight: 700; color: #677659; margin: 20px 0 8px; }
+  .tpl-premium .doc-page h3 { font-size: 13px; font-weight: 700; color: #546347; margin: 15px 0 6px; }
+  .tpl-premium .doc-page p  { margin: 0 0 11px; }
+  .tpl-premium .doc-page blockquote { border-left: 3px solid #677659; padding-left: 16px; color: #677659; font-style: italic; margin: 14px 0; }
+  .tpl-premium .doc-page ul, .tpl-premium .doc-page ol { padding-left: 18px; margin: 7px 0; }
+  .tpl-premium .doc-page li { margin: 4px 0; }
+  .tpl-premium .doc-page code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: rgba(103,118,89,.1); padding: 1px 5px; border-radius: 3px; color: #677659; }
+  .tpl-premium .doc-page pre { background: rgba(103,118,89,.07); padding: 14px; border-radius: 6px; overflow-x: auto; margin: 10px 0; }
+  .tpl-premium .doc-page pre code { background: none; padding: 0; }
+  .tpl-premium .doc-page hr  { border: none; border-top: 1px solid #c4cfc0; margin: 22px 0; }
+  .tpl-premium .doc-page a   { color: #677659; text-decoration: underline; }
+  .tpl-premium .doc-page strong { font-weight: 700; color: #3a4332; }
+  .tpl-premium .doc-page table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+  .tpl-premium .doc-page th { background: #677659; color: #fff; padding: 8px 10px; text-align: left; }
+  .tpl-premium .doc-page td { padding: 7px 10px; border-bottom: 1px solid #c4cfc0; }
+  .tpl-premium .doc-page tr:nth-child(even) td { background: rgba(103,118,89,.05); }
+
+  /* ============================================================
+     TOAST
+  ============================================================ */
+  #toast {
+    position: fixed; bottom: 20px; right: 20px;
+    background: var(--navy-2); border: 1px solid var(--navy-3);
+    color: var(--bright);
+    font-size: 13px; font-weight: 500;
+    padding: 11px 16px; border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.5);
+    display: flex; align-items: center; gap: 9px;
+    transform: translateY(70px); opacity: 0;
+    transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .25s;
+    z-index: 200; pointer-events: none;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  .toast-icon { font-size: 14px; }
+  #toast.success .toast-icon { color: var(--green); }
+  #toast.error   .toast-icon { color: var(--red); }
+  #toast.loading .toast-icon { color: var(--amber); animation: blink 1s infinite; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--navy-3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--navy-4); }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     NAVBAR
+══════════════════════════════════════════ -->
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="nav-logo">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+    </div>
+    <span class="nav-title">Boardroom<em>MD</em></span>
+    <span class="nav-pill">Client-side · No Upload</span>
+  </div>
+  <div class="nav-right">
+    <a href="https://github.com/hubdestro/BoardroomMD" target="_blank" class="btn-ghost">
+      <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+        <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/>
+      </svg>
+      GitHub
+    </a>
+    <button id="generateBtn" class="btn-primary">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+      </svg>
+      Generate .docx
+    </button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     WORKSPACE
+══════════════════════════════════════════ -->
+<div class="workspace">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-body">
+
+      <div>
+        <div class="field-label">Document</div>
+        <div class="field-group">
+          <div class="field-row">
+            <label for="docTitle">Title</label>
+            <input type="text" id="docTitle" class="field-input" placeholder="My Document">
+          </div>
+          <div class="field-row">
+            <label for="docAuthor">Author</label>
+            <input type="text" id="docAuthor" class="field-input" placeholder="Jane Smith">
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="field-label">Template</div>
+        <div class="tpl-cards">
+
+          <label class="tpl-card is-active" id="card-corporate">
+            <input type="radio" name="template" value="corporate" checked>
+            <div class="tpl-radio"></div>
+            <div class="tpl-info">
+              <div class="tpl-name">Corporate</div>
+              <div class="tpl-desc">Arial · Blue accents · Pro</div>
+            </div>
+            <div class="tpl-swatch sw-corp"></div>
+          </label>
+
+          <label class="tpl-card" id="card-modern">
+            <input type="radio" name="template" value="modern">
+            <div class="tpl-radio"></div>
+            <div class="tpl-info">
+              <div class="tpl-name">Modern</div>
+              <div class="tpl-desc">Helvetica · Green · Minimal</div>
+            </div>
+            <div class="tpl-swatch sw-modern"></div>
+          </label>
+
+          <label class="tpl-card" id="card-premium">
+            <input type="radio" name="template" value="premium">
+            <div class="tpl-radio"></div>
+            <div class="tpl-info">
+              <div class="tpl-name">Premium</div>
+              <div class="tpl-desc">Serif · Gradient cover · Sage</div>
+            </div>
+            <div class="tpl-swatch sw-prem"></div>
+          </label>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div class="status-bar">
+      <div id="statusDot" class="status-dot"></div>
+      <span id="statusText">Ready</span>
+      <span id="wordCount" class="status-words">0 words</span>
+    </div>
+  </aside>
+
+  <!-- ── Editor ── -->
+  <div class="editor-pane">
+    <div class="pane-bar">
+      <div class="pane-bar-dot" style="background:#ff5f56"></div>
+      <div class="pane-bar-dot" style="background:#ffbd2e;margin-left:4px"></div>
+      <div class="pane-bar-dot" style="background:#27c93f;margin-left:4px"></div>
+      <span class="pane-bar-title">markdown editor</span>
+      <button id="humanizeBtn" title="Remove emoji and em dashes to humanize text" style="
+        margin-left:auto; display:flex; align-items:center; gap:5px;
+        font-size:11px; font-weight:500; color:#94a3b8;
+        background:#1e293b; border:1px solid #334155;
+        padding:3px 9px; border-radius:5px; cursor:pointer;
+        transition:all .15s; white-space:nowrap;
+      ">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        Humanise
+      </button>
+    </div>
+    <textarea id="markdownInput" spellcheck="false" placeholder="# Your document title
+
+Start writing in Markdown — the preview updates live →
+
+## Features
+- **Bold**, *italic*, ~~strikethrough~~
+- Headings, lists, tables, code blocks
+- Blockquotes, horizontal rules, links
+
+> All processing is 100% client-side. Nothing leaves your browser.
+
+---
+
+Click **Generate .docx** to download your styled Word document."></textarea>
+  </div>
+
+  <!-- ── Preview ── -->
+  <div class="preview-pane">
+    <div class="pane-bar">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" style="flex-shrink:0">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span class="pane-bar-title" style="margin-left:6px">live preview</span>
+    </div>
+
+    <div class="preview-scroll" id="previewScroll">
+      <div class="preview-empty" id="previewEmpty">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <div class="preview-empty-title">Preview appears here</div>
+        <div class="preview-empty-sub">Start typing in the editor to see your document</div>
+      </div>
+
+      <div id="previewDoc" style="display:none; width:100%; max-width:660px;"></div>
+    </div>
+  </div>
+
+</div><!-- /workspace -->
+
+<!-- Toast -->
+<div id="toast">
+  <span class="toast-icon" id="toastIcon">✓</span>
+  <span id="toastMsg">Done</span>
+</div>
+
+<!-- ══════════════════════════════════════════
+     APP LOGIC
+══════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  /* Restore docx lib in case any CDN script clobbered it */
+  if (window._docxLib) window.docx = window._docxLib;
+
+  /* marked config */
+  if (window.marked) marked.setOptions({ breaks: true, gfm: true });
+
+  /* ─── TOKEN MAPPER ───────────────────────────────────── */
+  const TokenMapper = {
+    map(tokens) {
+      const out = [];
+      tokens.forEach(t => {
+        const el = this.tok(t);
+        if (el) Array.isArray(el) ? out.push(...el) : out.push(el);
+      });
+      return out;
+    },
+    tok(t) {
+      const { Paragraph, TextRun } = window.docx;
+      switch (t.type) {
+        case 'heading': {
+          /* Use our custom BM styles (BMH1/BMH2/BMH3) so Word's built-in
+             heading theme colours don't override the template styles.
+             Clamp depth to 1–3; fall back to BMH3 for deeper levels. */
+          const depth = Math.min(t.depth || 1, 3);
+          return new Paragraph({ children: this.inline(t.tokens || []), style: 'BMH' + depth });
+        }
+        case 'paragraph':
+          return new Paragraph({ children: this.inline(t.tokens || []) });
+        case 'space':
+          return new Paragraph({ children: [] });
+        case 'blockquote': {
+          const inner = t.tokens && t.tokens[0] && t.tokens[0].tokens
+            ? t.tokens[0].tokens
+            : [{ type: 'text', text: t.text || '' }];
+          return new Paragraph({ children: this.inline(inner), style: 'BMQuote' });
+        }
+        case 'list':
+          return t.items.map(item => {
+            const inner = item.tokens && item.tokens[0] && item.tokens[0].tokens
+              ? item.tokens[0].tokens
+              : [{ type: 'text', text: item.text || '' }];
+            return new Paragraph({ children: this.inline(inner), bullet: { level: 0 } });
+          });
+        case 'hr':
+          return new Paragraph({ border: { top: { color:'auto', space:1, style:'single', size:6 } }, children:[] });
+        case 'code':
+          return new Paragraph({ children: [new TextRun({ text: t.text, font:'Courier New', size:20 })] });
+        default:
+          if (t.raw || t.text) return new Paragraph({ children:[new TextRun({ text: t.raw||t.text||'' })] });
+          return null;
+      }
+    },
+    inline(tokens, fmt = {}) {
+      const { TextRun } = window.docx;
+      const runs = [];
+      if (!tokens || !tokens.length) return runs;
+      tokens.forEach(t => {
+        switch (t.type) {
+          case 'text': case 'escape': case 'html':
+            if (t.tokens && t.tokens.length) runs.push(...this.inline(t.tokens, fmt));
+            else runs.push(new TextRun({ text: t.text || t.raw || '', ...fmt }));
+            break;
+          case 'strong':
+            runs.push(...this.inline(
+              t.tokens || [{ type:'text', text: t.text||'' }],
+              { ...fmt, bold: true }
+            ));
+            break;
+          case 'em':
+            runs.push(...this.inline(
+              t.tokens || [{ type:'text', text: t.text||'' }],
+              { ...fmt, italic: true }
+            ));
+            break;
+          case 'del':
+            runs.push(...this.inline(
+              t.tokens || [{ type:'text', text: t.text||'' }],
+              { ...fmt, strike: true }
+            ));
+            break;
+          case 'codespan':
+            runs.push(new TextRun({ text: t.text, font:'Courier New', color:'c2185b', ...fmt })); break;
+          case 'link':
+            runs.push(new TextRun({ text: t.text||t.href, color:'0563C1', underline:{}, ...fmt })); break;
+          default:
+            if (t.tokens) runs.push(...this.inline(t.tokens, fmt));
+            else if (t.text) runs.push(new TextRun({ text: t.text, ...fmt }));
+        }
+      });
+      return runs;
+    }
+  };
+
+  /* ─── CANVAS COVER IMAGE HELPER ─────────────────────── */
+  /* Generates a PNG Uint8Array via canvas — used for docx cover pages */
+  function canvasCoverPNG(w, h, drawFn) {
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    drawFn(canvas.getContext('2d'), w, h);
+    const b64 = canvas.toDataURL('image/png').split(',')[1];
+    const raw = atob(b64);
+    const arr = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+  }
+
+  function corporateCoverImg() {
+    return canvasCoverPNG(793, 1122, (ctx, w, h) => {
+      // Solid blue base
+      ctx.fillStyle = '#0F4C81';
+      ctx.fillRect(0, 0, w, h);
+      // Dark bottom gradient to add depth
+      const g = ctx.createLinearGradient(0, h * 0.5, 0, h);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(1, 'rgba(0,0,0,0.38)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, h * 0.5, w, h * 0.5);
+      // Subtle lighter top stripe
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillRect(0, 0, w, 6);
+    });
+  }
+
+  function modernCoverImg() {
+    return canvasCoverPNG(793, 1122, (ctx, w, h) => {
+      // Dark diagonal gradient
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, '#0f1923');
+      g.addColorStop(1, '#162411');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      // Green accent bar at top
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(0, 0, w, 7);
+      // Dark bottom scrim
+      const s = ctx.createLinearGradient(0, h * 0.55, 0, h);
+      s.addColorStop(0, 'rgba(0,0,0,0)');
+      s.addColorStop(1, 'rgba(0,0,0,0.5)');
+      ctx.fillStyle = s;
+      ctx.fillRect(0, h * 0.55, w, h * 0.45);
+    });
+  }
+
+  function makeDocxBgImage(imgBytes) {
+    const { ImageRun, HorizontalPositionAlign, VerticalPositionAlign,
+            HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom } = window.docx;
+    return new ImageRun({
+      data: imgBytes, transformation: { width: 793, height: 1122 },
+      floating: {
+        horizontalPosition: { relative: HorizontalPositionRelativeFrom.PAGE, align: HorizontalPositionAlign.LEFT },
+        verticalPosition: { relative: VerticalPositionRelativeFrom.PAGE, align: VerticalPositionAlign.TOP },
+        behindDocument: true, allowOverlap: true
+      }
+    });
+  }
+
+  /* ─── TEMPLATE FACTORY ───────────────────────────────── */
+  const TF = {
+    corporate: {
+      styles: {
+        default: {
+          document: {
+            run: { font:'Arial', size:24, color:'000000' },
+            paragraph: { spacing:{ line:276, before:160, after:160 } }
+          }
+        },
+        /* ── Custom IDs (BMH*) avoid conflict with Word's built-in Heading1/2/3 theme styles */
+        paragraphStyles: [
+          { id:'BMCoverTitle', name:'BM Cover Title', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ size:80, bold:true, color:'FFFFFF' },
+            paragraph:{ spacing:{before:10080,after:320}, alignment:window.docx.AlignmentType.LEFT } },
+          { id:'BMCoverSub', name:'BM Cover Sub', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ size:32, color:'C8DCF0' },
+            paragraph:{ spacing:{before:160,after:120}, alignment:window.docx.AlignmentType.LEFT } },
+          { id:'BMH1', name:'BM Heading 1', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ font:'Arial', size:36, bold:true, color:'0F4C81' },
+            paragraph:{ spacing:{before:400,after:200},
+              border:{bottom:{color:'0F4C81',space:4,size:8,style:'single'}} } },
+          { id:'BMH2', name:'BM Heading 2', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ font:'Arial', size:28, bold:true, color:'222222' },
+            paragraph:{ spacing:{before:280,after:140} } },
+          { id:'BMH3', name:'BM Heading 3', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ font:'Arial', size:24, bold:true, color:'444444' },
+            paragraph:{ spacing:{before:200,after:100} } },
+          { id:'BMQuote', name:'BM Quote', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ italic:true, color:'666666' },
+            paragraph:{ indent:{left:720}, border:{left:{color:'0F4C81',space:10,size:20,style:'single'}} } }
+        ]
+      },
+      sections(els, meta) {
+        const { Paragraph, TextRun, Header, Footer, AlignmentType, PageNumber, SectionType, BorderStyle } = window.docx;
+        const bgImg = makeDocxBgImage(corporateCoverImg());
+        return [
+          {
+            /* Cover — zero margins, full bleed */
+            properties: { type:SectionType.NEXT_PAGE, page:{ margin:{top:0,right:0,bottom:0,left:0} } },
+            children: [
+              new Paragraph({ spacing:{before:0,after:0,line:240}, children:[bgImg] }),
+              new Paragraph({ text:meta.title||'Document Title', style:'BMCoverTitle' }),
+              new Paragraph({ text:meta.author||'Author', style:'BMCoverSub' }),
+              new Paragraph({ text:new Date().toLocaleDateString(), style:'BMCoverSub' })
+            ]
+          },
+          {
+            /* Body */
+            properties: { type:SectionType.NEXT_PAGE, page:{ margin:{top:1440,right:1440,bottom:1440,left:1440} } },
+            headers: { default: new Header({ children:[new Paragraph({
+              alignment:AlignmentType.RIGHT,
+              border:{bottom:{color:'0F4C81',space:1,style:BorderStyle.SINGLE,size:4}},
+              children:[new TextRun({ text:meta.title||'BoardroomMD', font:'Arial', size:18, color:'888888', italics:true })]
+            })] }) },
+            footers: { default: new Footer({ children:[new Paragraph({
+              alignment:AlignmentType.CENTER,
+              children:[new TextRun({font:'Arial',size:18,color:'888888',children:['Page ']}),
+                        new TextRun({font:'Arial',size:18,color:'888888',children:[PageNumber.CURRENT]}),
+                        new TextRun({font:'Arial',size:18,color:'888888',children:[' of ']}),
+                        new TextRun({font:'Arial',size:18,color:'888888',children:[PageNumber.TOTAL_PAGES]})]
+            })] }) },
+            children: [new Paragraph({ text:'', pageBreakBefore:true }), ...els]
+          }
+        ];
+      }
+    },
+
+    modern: {
+      styles: {
+        default: {
+          document: {
+            run: { font:'Helvetica', size:22, color:'111111' },
+            paragraph: { spacing:{ line:360, before:200, after:200 } }
+          }
+        },
+        paragraphStyles: [
+          { id:'BMCoverTitle', name:'BM Cover Title', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ size:88, bold:false, color:'22c55e' },
+            paragraph:{ spacing:{before:10080,after:480}, alignment:window.docx.AlignmentType.LEFT } },
+          { id:'BMCoverSub', name:'BM Cover Sub', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ size:32, color:'888888' },
+            paragraph:{ spacing:{before:160,after:120}, alignment:window.docx.AlignmentType.LEFT } },
+          { id:'BMH1', name:'BM Heading 1', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ font:'Helvetica', size:44, bold:false, color:'22c55e' },
+            paragraph:{ spacing:{before:560,after:280} } },
+          { id:'BMH2', name:'BM Heading 2', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ font:'Helvetica', size:32, bold:true, color:'333333' },
+            paragraph:{ spacing:{before:380,after:180} } },
+          { id:'BMH3', name:'BM Heading 3', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ font:'Helvetica', size:26, bold:true, color:'444444' },
+            paragraph:{ spacing:{before:260,after:120} } },
+          { id:'BMQuote', name:'BM Quote', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ italic:true, color:'888888' },
+            paragraph:{ indent:{left:720}, border:{left:{color:'22c55e',space:10,size:20,style:'single'}} } }
+        ]
+      },
+      sections(els, meta) {
+        const { Paragraph, TextRun, Header, Footer, AlignmentType, PageNumber, SectionType, BorderStyle } = window.docx;
+        const bgImg = makeDocxBgImage(modernCoverImg());
+        return [
+          {
+            properties: { type:SectionType.NEXT_PAGE, page:{ margin:{top:0,right:0,bottom:0,left:0} } },
+            children: [
+              new Paragraph({ spacing:{before:0,after:0,line:240}, children:[bgImg] }),
+              new Paragraph({ text:meta.title||'Document Title', style:'BMCoverTitle' }),
+              new Paragraph({ text:meta.author||'Author', style:'BMCoverSub' }),
+              new Paragraph({ text:new Date().toLocaleDateString(), style:'BMCoverSub' })
+            ]
+          },
+          {
+            properties: { type:SectionType.NEXT_PAGE, page:{ margin:{top:1440,right:1440,bottom:1440,left:1440} } },
+            headers: { default: new Header({ children:[new Paragraph({
+              alignment:AlignmentType.LEFT,
+              border:{bottom:{color:'22c55e',space:1,style:BorderStyle.SINGLE,size:6}},
+              children:[new TextRun({ text:(meta.title||'BoardroomMD').toUpperCase(), font:'Helvetica', size:18, color:'22c55e', bold:true })]
+            })] }) },
+            footers: { default: new Footer({ children:[new Paragraph({
+              alignment:AlignmentType.RIGHT,
+              children:[new TextRun({font:'Helvetica',size:18,color:'aaaaaa',children:['Page ']}),
+                        new TextRun({font:'Helvetica',size:18,color:'aaaaaa',children:[PageNumber.CURRENT]}),
+                        new TextRun({font:'Helvetica',size:18,color:'aaaaaa',children:[' / ']}),
+                        new TextRun({font:'Helvetica',size:18,color:'aaaaaa',children:[PageNumber.TOTAL_PAGES]})]
+            })] }) },
+            children: [new Paragraph({ text:'', pageBreakBefore:true }), ...els]
+          }
+        ];
+      }
+    },
+
+    premium: {
+      background: { color:'f5f7f4' },  /* matches the HTML preview .tpl-premium .doc-page background */
+      styles: {
+        default: {
+          document: {
+            run: { font:'Calibri', size:22, color:'454F3C' },
+            paragraph: { spacing:{ line:300, before:160, after:160 } }
+          }
+        },
+        paragraphStyles: [
+          { id:'BMCoverTitle', name:'BM Cover Title', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ size:80, bold:true, color:'FFFFFF' },
+            paragraph:{ spacing:{before:10080,after:320}, alignment:window.docx.AlignmentType.LEFT } },
+          { id:'BMCoverSub', name:'BM Cover Sub', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ size:32, color:'DDDDDD' },
+            paragraph:{ spacing:{before:160,after:120}, alignment:window.docx.AlignmentType.LEFT } },
+          { id:'BMH1', name:'BM Heading 1', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ font:'Calibri', size:38, bold:false, color:'454F3C' },
+            paragraph:{ spacing:{before:400,after:200},
+              border:{bottom:{color:'677659',space:4,size:6,style:'single'}} } },
+          { id:'BMH2', name:'BM Heading 2', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ font:'Calibri', size:30, bold:true, color:'677659' },
+            paragraph:{ spacing:{before:280,after:140} } },
+          { id:'BMH3', name:'BM Heading 3', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ font:'Calibri', size:24, bold:true, color:'546347' },
+            paragraph:{ spacing:{before:200,after:100} } },
+          { id:'BMQuote', name:'BM Quote', basedOn:'Normal', next:'Normal', quickFormat:true,
+            run:{ italic:true, color:'677659' },
+            paragraph:{ indent:{left:720}, border:{left:{color:'677659',space:10,size:20,style:'single'}} } }
+        ]
+      },
+      sections(els, meta) {
+        const { Paragraph, TextRun, ImageRun, Header, Footer, AlignmentType, PageNumber, SectionType, BorderStyle,
+                HorizontalPositionAlign, VerticalPositionAlign,
+                HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom } = window.docx;
+
+        function b64(s) {
+          const raw = atob(s); const a = new Uint8Array(raw.length);
+          for (let i = 0; i < raw.length; i++) a[i] = raw.charCodeAt(i); return a;
+        }
+
+        const imgBytes = b64(window.AppAssets.coverGradient);
+        const bgImg = new ImageRun({
+          data: imgBytes, transformation:{ width:793, height:1122 },
+          floating:{
+            horizontalPosition:{ relative:HorizontalPositionRelativeFrom.PAGE, align:HorizontalPositionAlign.LEFT },
+            verticalPosition:{ relative:VerticalPositionRelativeFrom.PAGE, align:VerticalPositionAlign.TOP },
+            behindDocument:true, allowOverlap:true
+          }
+        });
+
+        return [
+          {
+            properties:{ type:SectionType.NEXT_PAGE, page:{ margin:{top:0,right:0,bottom:0,left:0} } },
+            children:[
+              new Paragraph({ spacing:{before:0,after:0,line:240}, children:[bgImg] }),
+              new Paragraph({ text:meta.title||'Document Title', style:'BMCoverTitle' }),
+              new Paragraph({ text:meta.author||'Author', style:'BMCoverSub' }),
+              new Paragraph({ text:new Date().toLocaleDateString(), style:'BMCoverSub' })
+            ]
+          },
+          {
+            properties:{ type:SectionType.NEXT_PAGE, page:{ margin:{top:1440,right:1440,bottom:1440,left:1440} } },
+            headers:{ default: new Header({ children:[new Paragraph({
+              alignment:AlignmentType.RIGHT,
+              border:{bottom:{color:'677659',space:1,style:BorderStyle.SINGLE,size:4}},
+              children:[new TextRun({ text:meta.title||'BoardroomMD', font:'Calibri', size:18, color:'677659' })]
+            })] }) },
+            footers:{ default: new Footer({ children:[new Paragraph({
+              alignment:AlignmentType.CENTER,
+              children:[
+                new TextRun({font:'Calibri',size:18,color:'677659',children:['Page ']}),
+                new TextRun({font:'Calibri',size:18,color:'677659',children:[PageNumber.CURRENT]}),
+                new TextRun({font:'Calibri',size:18,color:'677659',children:[' of ']}),
+                new TextRun({font:'Calibri',size:18,color:'677659',children:[PageNumber.TOTAL_PAGES]})
+              ]
+            })] }) },
+            children:[ new Paragraph({ text:'', pageBreakBefore:true }), ...els ]
+          }
+        ];
+      }
+    }
+  };
+
+  /* ─── GENERATOR ──────────────────────────────────────── */
+  async function generateBlob(els, tplId, meta) {
+    const { Document, Packer } = window.docx;
+    const tpl = TF[tplId] || TF.corporate;
+    const sections = tpl.sections(els, meta);
+    const cfg = {
+      creator: meta.author || 'BoardroomMD',
+      title: meta.title || 'Document',
+      styles: tpl.styles,
+      sections
+    };
+    if (tpl.background) cfg.background = tpl.background;
+    return await Packer.toBlob(new Document(cfg));
+  }
+
+  /* ─── UI HELPERS ─────────────────────────────────────── */
+  const $ = id => document.getElementById(id);
+
+  let toastTimer;
+  function toast(msg, type = 'success') {
+    const el = $('toast');
+    $('toastMsg').textContent = msg;
+    $('toastIcon').textContent = type === 'success' ? '✓' : type === 'error' ? '✕' : '◌';
+    el.className = 'show ' + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.className = ''; }, 3200);
+  }
+
+  function setStatus(state, msg) {
+    $('statusDot').className = 'status-dot' + (state !== 'ready' ? ' ' + state : '');
+    $('statusText').textContent = msg;
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ─── LIVE PREVIEW ───────────────────────────────────── */
+  let renderTimer;
+  function scheduleRender() { clearTimeout(renderTimer); renderTimer = setTimeout(render, 180); }
+
+  function render() {
+    const md     = $('markdownInput').value.trim();
+    const tpl    = document.querySelector('input[name="template"]:checked')?.value || 'corporate';
+    const title  = stripEmojiFromTitle($('docTitle').value.trim() || 'Untitled Document');
+    const author = $('docAuthor').value.trim() || 'Author';
+    const date   = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+
+    const empty = $('previewEmpty');
+    const doc   = $('previewDoc');
+
+    if (!md) {
+      empty.style.display = 'flex';
+      doc.style.display   = 'none';
+      return;
+    }
+
+    empty.style.display = 'none';
+    doc.style.display   = 'block';
+
+    let coverBg = '';
+    if (tpl === 'premium' && window.AppAssets?.coverGradient) {
+      coverBg = `background-image:url('data:image/png;base64,${window.AppAssets.coverGradient}');background-size:cover;background-position:center top;`;
+    }
+
+    const bodyHtml = window.marked ? marked.parse(md) : '<p>' + esc(md) + '</p>';
+
+    doc.innerHTML = `
+      <div class="tpl-${tpl}">
+        <div class="doc-cover" style="${coverBg}">
+          <div>
+            <h1>${esc(title)}</h1>
+            <div class="doc-cover-meta">${esc(author)}</div>
+            <div class="doc-cover-meta">${date}</div>
+          </div>
+        </div>
+        <div class="doc-page">${bodyHtml}</div>
+      </div>`;
+
+    $('previewScroll').scrollTop = 0;
+  }
+
+  /* ─── WORD COUNT ─────────────────────────────────────── */
+  function updateWords() {
+    const t = $('markdownInput').value.trim();
+    const n = t ? t.split(/\s+/).length : 0;
+    $('wordCount').textContent = n + (n === 1 ? ' word' : ' words');
+  }
+
+  /* ─── TITLE HELPERS ──────────────────────────────────── */
+  let titleSetByUser = false;
+
+  /* Strip emoji from a string (reuses the humanize ranges) */
+  function stripEmojiFromTitle(s) {
+    return s
+      .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
+      .replace(/[\u{2600}-\u{27BF}]/gu, '')
+      .replace(/[\u{FE00}-\u{FE0F}]/gu, '')
+      .replace(/[●▪▸►▶◆★☆✓✔✗✘]/g, '')
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  /* Truncate to max 4 words, append ellipsis if longer */
+  function truncateTo4Words(s) {
+    const words = s.split(/\s+/).filter(Boolean);
+    if (words.length <= 4) return s;
+    return words.slice(0, 4).join(' ') + '…';
+  }
+
+  function syncTitleFromMarkdown(md) {
+    if (titleSetByUser) return;
+    const match = md.match(/^#\s+(.+)$/m);
+    if (match) {
+      const raw     = match[1].replace(/[*_`~]/g, '').trim();
+      const cleaned = truncateTo4Words(stripEmojiFromTitle(raw));
+      if (cleaned) $('docTitle').value = cleaned;
+    }
+  }
+
+  /* ─── HUMANIZE: REMOVE EMOJI & EM DASH ───────────────── */
+  function humanize(text) {
+    return text
+      // Em dash → hyphen, en dash → hyphen
+      .replace(/[—–]/g, '-')
+      // Emoji (broad Unicode ranges)
+      .replace(/[\u{1F600}-\u{1F64F}]/gu, '')
+      .replace(/[\u{1F300}-\u{1F5FF}]/gu, '')
+      .replace(/[\u{1F680}-\u{1F6FF}]/gu, '')
+      .replace(/[\u{1F700}-\u{1F77F}]/gu, '')
+      .replace(/[\u{1F780}-\u{1F7FF}]/gu, '')
+      .replace(/[\u{1F800}-\u{1F8FF}]/gu, '')
+      .replace(/[\u{1F900}-\u{1F9FF}]/gu, '')
+      .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '')
+      .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '')
+      .replace(/[\u{2600}-\u{26FF}]/gu, '')
+      .replace(/[\u{2700}-\u{27BF}]/gu, '')
+      .replace(/[\u{FE00}-\u{FE0F}]/gu, '')
+      .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '')
+      // AI-favourite bullet symbols
+      .replace(/[●▪▸►▶◆★☆✓✔✗✘✨🔹🔸]/g, '')
+      // Collapse multiple spaces left behind
+      .replace(/ {2,}/g, ' ')
+      .replace(/^ /gm, '');
+  }
+
+  /* ─── WIRE UP ────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window._docxLib) window.docx = window._docxLib;
+
+    $('markdownInput').addEventListener('input', () => {
+      syncTitleFromMarkdown($('markdownInput').value);
+      updateWords();
+      scheduleRender();
+    });
+
+    // If user manually edits the title field, stop auto-syncing; resume if cleared
+    $('docTitle').addEventListener('input', () => {
+      titleSetByUser = $('docTitle').value.trim().length > 0;
+      scheduleRender();
+    });
+    $('docAuthor').addEventListener('input', scheduleRender);
+
+    // Humanize button
+    $('humanizeBtn').addEventListener('click', () => {
+      const ta = $('markdownInput');
+      const original = ta.value;
+      const cleaned = humanize(original);
+      if (cleaned === original) {
+        toast('No emoji or em dashes found', 'loading');
+        return;
+      }
+      ta.value = cleaned;
+      ta.dispatchEvent(new Event('input'));
+      const removed = original.length - cleaned.length;
+      toast(`Removed ${removed} character${removed !== 1 ? 's' : ''} ✓`, 'success');
+    });
+
+    document.querySelectorAll('input[name="template"]').forEach(r => {
+      r.addEventListener('change', () => {
+        document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('is-active'));
+        r.closest('.tpl-card')?.classList.add('is-active');
+        scheduleRender();
+      });
+    });
+
+    $('generateBtn').addEventListener('click', async () => {
+      const md = $('markdownInput').value.trim();
+      if (!md) { toast('Please write some Markdown first', 'error'); return; }
+
+      if (window._docxLib) window.docx = window._docxLib;
+
+      $('generateBtn').disabled = true;
+      setStatus('loading', 'Generating…');
+      toast('Building your document…', 'loading');
+
+      try {
+        const tokens = marked.lexer(md);
+        const els    = TokenMapper.map(tokens);
+        const meta   = {
+          title:  stripEmojiFromTitle($('docTitle').value.trim()  || 'Generated Document'),
+          author: $('docAuthor').value.trim() || 'Author'
+        };
+        const tplId = document.querySelector('input[name="template"]:checked')?.value || 'corporate';
+        const blob  = await generateBlob(els, tplId, meta);
+        const fname = (meta.title.replace(/\s+/g, '_') || 'Document') + '.docx';
+        window.saveAs(blob, fname);
+        setStatus('ready', 'Download complete');
+        toast('Downloaded ' + fname + ' ✓', 'success');
+        setTimeout(() => setStatus('ready', 'Ready'), 3000);
+      } catch (err) {
+        console.error(err);
+        setStatus('error', 'Error');
+        toast('Error: ' + err.message, 'error');
+        setTimeout(() => setStatus('ready', 'Ready'), 4000);
+      } finally {
+        $('generateBtn').disabled = false;
+      }
+    });
+  });
+
+})();
+</script>
+</body>
+</html>
