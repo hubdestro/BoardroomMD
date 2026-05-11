@@ -784,10 +784,14 @@ Click **Generate .docx** to download your styled Word document."></textarea>
           return new Paragraph({ children: this.inline(inner), style: 'BMQuote' });
         }
         case 'list':
-          return t.items.map(item => {
+          return t.items.map((item, idx) => {
             const inner = item.tokens && item.tokens[0] && item.tokens[0].tokens
               ? item.tokens[0].tokens
               : [{ type: 'text', text: item.text || '' }];
+            if (t.ordered) {
+              const { TextRun } = window.docx;
+              return new Paragraph({ children: [new TextRun({ text: `${t.start + idx}.  ` }), ...this.inline(inner)] });
+            }
             return new Paragraph({ children: this.inline(inner), bullet: { level: 0 } });
           });
         case 'hr':
@@ -870,32 +874,24 @@ Click **Generate .docx** to download your styled Word document."></textarea>
       ctx.fillStyle = cg;
       ctx.fillRect(0, 0, w, h);
 
-      // Circle ring outline
+      // Circle ring outlines
       ctx.strokeStyle = 'rgba(255,255,255,0.06)';
       ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(w - 30, 110, 210, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Second ring
+      ctx.beginPath(); ctx.arc(w - 30, 110, 210, 0, Math.PI * 2); ctx.stroke();
       ctx.strokeStyle = 'rgba(255,255,255,0.03)';
       ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(w - 30, 110, 300, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.beginPath(); ctx.arc(w - 30, 110, 300, 0, Math.PI * 2); ctx.stroke();
 
       // Light accent bar at top
       const bar = ctx.createLinearGradient(0, 0, w, 0);
-      bar.addColorStop(0, '#3a8bc4');
-      bar.addColorStop(0.5, '#9cd3f7');
-      bar.addColorStop(1, '#3a8bc4');
+      bar.addColorStop(0, '#3a8bc4'); bar.addColorStop(0.5, '#9cd3f7'); bar.addColorStop(1, '#3a8bc4');
       ctx.fillStyle = bar;
       ctx.fillRect(0, 0, w, 6);
 
-      // Blue accent rule just above text area (~63% down the page ≈ 708px)
+      // Blue accent rule at ~72% down (aligns with where cover title appears in DOCX)
       ctx.fillStyle = '#5bb3e8';
       ctx.beginPath();
-      ctx.roundRect(75, 700, 55, 4, 2);
+      ctx.roundRect(75, Math.round(h * 0.715), 55, 4, 2);
       ctx.fill();
     });
   }
@@ -904,9 +900,7 @@ Click **Generate .docx** to download your styled Word document."></textarea>
     return canvasCoverPNG(793, 1122, (ctx, w, h) => {
       // Very dark gradient
       const g = ctx.createLinearGradient(0, 0, w, h);
-      g.addColorStop(0, '#07100a');
-      g.addColorStop(0.6, '#0a160c');
-      g.addColorStop(1, '#0d1e11');
+      g.addColorStop(0, '#07100a'); g.addColorStop(0.6, '#0a160c'); g.addColorStop(1, '#0d1e11');
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
 
@@ -928,10 +922,10 @@ Click **Generate .docx** to download your styled Word document."></textarea>
       ctx.fillStyle = '#22c55e';
       ctx.fillRect(0, 0, w, 6);
 
-      // Green dash accent ~63% down
+      // Green dash accent at ~72% down
       ctx.fillStyle = '#22c55e';
       ctx.beginPath();
-      ctx.roundRect(75, 700, 38, 3, 1.5);
+      ctx.roundRect(75, Math.round(h * 0.715), 38, 3, 1.5);
       ctx.fill();
     });
   }
@@ -940,10 +934,8 @@ Click **Generate .docx** to download your styled Word document."></textarea>
     return canvasCoverPNG(793, 1122, (ctx, w, h) => {
       // Rich sage forest gradient
       const g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0,   '#1a2b1c');
-      g.addColorStop(0.4, '#2d4530');
-      g.addColorStop(0.7, '#4a5f3e');
-      g.addColorStop(1,   '#c8d8be');
+      g.addColorStop(0, '#1a2b1c'); g.addColorStop(0.4, '#2d4530');
+      g.addColorStop(0.7, '#4a5f3e'); g.addColorStop(1, '#c8d8be');
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
 
@@ -954,32 +946,34 @@ Click **Generate .docx** to download your styled Word document."></textarea>
       ctx.fillStyle = sheen;
       ctx.fillRect(0, 0, w, h);
 
-      // Center radial vignette to ensure text contrast
+      // Center radial vignette
       const vig = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.max(w, h) * 0.65);
       vig.addColorStop(0, 'rgba(0,0,0,0.38)');
       vig.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = vig;
       ctx.fillRect(0, 0, w, h);
 
-      // Thin horizontal ornament line at mid-page
-      const mx = w / 2, my = h * 0.53;
-      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(mx - 120, my); ctx.lineTo(mx - 24, my); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(mx + 24, my); ctx.lineTo(mx + 120, my); ctx.stroke();
+      // Ornament zone: centered at 42% to align with DOCX text block
+      const mx = w / 2;
+      const oy = h * 0.40; // ornament/diamond y position
 
-      // Diamond ornament
+      // Diamond
       ctx.fillStyle = 'rgba(255,255,255,0.35)';
       ctx.save();
-      ctx.translate(mx, my - h * 0.07);
+      ctx.translate(mx, oy);
       ctx.rotate(Math.PI / 4);
       ctx.fillRect(-5, -5, 10, 10);
       ctx.restore();
 
-      // Thin rule below text area
-      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      // Flanking lines at diamond level
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
       ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(mx - 44, my + 120); ctx.lineTo(mx + 44, my + 120); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mx - 120, oy); ctx.lineTo(mx - 18, oy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mx + 18, oy); ctx.lineTo(mx + 120, oy); ctx.stroke();
+
+      // Thin rule below text block (~57%)
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.beginPath(); ctx.moveTo(mx - 44, h * 0.57); ctx.lineTo(mx + 44, h * 0.57); ctx.stroke();
     });
   }
 
@@ -1010,10 +1004,11 @@ Click **Generate .docx** to download your styled Word document."></textarea>
         paragraphStyles: [
           { id:'BMCoverTitle', name:'BM Cover Title', basedOn:'Normal', next:'Normal', quickFormat:true,
             run:{ size:80, bold:true, color:'FFFFFF' },
-            paragraph:{ spacing:{before:10080,after:320}, alignment:window.docx.AlignmentType.LEFT } },
+            /* spacing.before in twips: 72% of A4 height (16838) = 12123 → 12096 */
+            paragraph:{ spacing:{before:12096,after:280}, alignment:window.docx.AlignmentType.LEFT } },
           { id:'BMCoverSub', name:'BM Cover Sub', basedOn:'Normal', next:'Normal', quickFormat:true,
-            run:{ size:32, color:'C8DCF0' },
-            paragraph:{ spacing:{before:160,after:120}, alignment:window.docx.AlignmentType.LEFT } },
+            run:{ size:28, color:'C8DCF0' },
+            paragraph:{ spacing:{before:120,after:120}, alignment:window.docx.AlignmentType.LEFT } },
           { id:'BMH1', name:'BM Heading 1', basedOn:'Normal', next:'Normal', quickFormat:true,
             run:{ font:'Arial', size:36, bold:true, color:'0F4C81' },
             paragraph:{ spacing:{before:400,after:200},
@@ -1032,20 +1027,25 @@ Click **Generate .docx** to download your styled Word document."></textarea>
       sections(els, meta) {
         const { Paragraph, TextRun, Header, Footer, AlignmentType, PageNumber, SectionType, BorderStyle } = window.docx;
         const bgImg = makeDocxBgImage(corporateCoverImg());
+        const date  = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+        const A4 = { width:11906, height:16838 };
         return [
           {
-            /* Cover — zero margins, full bleed */
-            properties: { type:SectionType.NEXT_PAGE, page:{ margin:{top:0,right:0,bottom:0,left:0} } },
+            /* Cover — A4, zero margins, full bleed */
+            properties: { type:SectionType.NEXT_PAGE, page:{ size:A4, margin:{top:0,right:0,bottom:0,left:0} } },
             children: [
               new Paragraph({ spacing:{before:0,after:0,line:240}, children:[bgImg] }),
               new Paragraph({ text:meta.title||'Document Title', style:'BMCoverTitle' }),
-              new Paragraph({ text:meta.author||'Author', style:'BMCoverSub' }),
-              new Paragraph({ text:new Date().toLocaleDateString(), style:'BMCoverSub' })
+              new Paragraph({ children:[
+                new TextRun({ text:(meta.author||'Author'), font:'Arial', size:28, color:'C8DCF0' }),
+                new TextRun({ text:'   ·   ', font:'Arial', size:28, color:'7aadce' }),
+                new TextRun({ text:date, font:'Arial', size:28, color:'C8DCF0' })
+              ], paragraph:{ spacing:{before:120,after:0}, alignment:AlignmentType.LEFT } })
             ]
           },
           {
-            /* Body */
-            properties: { type:SectionType.NEXT_PAGE, page:{ margin:{top:1440,right:1440,bottom:1440,left:1440} } },
+            /* Body — A4, standard 1-inch margins */
+            properties: { type:SectionType.NEXT_PAGE, page:{ size:A4, margin:{top:1440,right:1440,bottom:1440,left:1440} } },
             headers: { default: new Header({ children:[new Paragraph({
               alignment:AlignmentType.RIGHT,
               border:{bottom:{color:'0F4C81',space:1,style:BorderStyle.SINGLE,size:4}},
@@ -1058,7 +1058,7 @@ Click **Generate .docx** to download your styled Word document."></textarea>
                         new TextRun({font:'Arial',size:18,color:'888888',children:[' of ']}),
                         new TextRun({font:'Arial',size:18,color:'888888',children:[PageNumber.TOTAL_PAGES]})]
             })] }) },
-            children: [new Paragraph({ text:'', pageBreakBefore:true }), ...els]
+            children: els
           }
         ];
       }
@@ -1075,10 +1075,10 @@ Click **Generate .docx** to download your styled Word document."></textarea>
         paragraphStyles: [
           { id:'BMCoverTitle', name:'BM Cover Title', basedOn:'Normal', next:'Normal', quickFormat:true,
             run:{ size:88, bold:false, color:'22c55e' },
-            paragraph:{ spacing:{before:10080,after:480}, alignment:window.docx.AlignmentType.LEFT } },
+            paragraph:{ spacing:{before:12096,after:400}, alignment:window.docx.AlignmentType.LEFT } },
           { id:'BMCoverSub', name:'BM Cover Sub', basedOn:'Normal', next:'Normal', quickFormat:true,
-            run:{ size:32, color:'888888' },
-            paragraph:{ spacing:{before:160,after:120}, alignment:window.docx.AlignmentType.LEFT } },
+            run:{ size:28, color:'888888' },
+            paragraph:{ spacing:{before:120,after:120}, alignment:window.docx.AlignmentType.LEFT } },
           { id:'BMH1', name:'BM Heading 1', basedOn:'Normal', next:'Normal', quickFormat:true,
             run:{ font:'Helvetica', size:44, bold:false, color:'22c55e' },
             paragraph:{ spacing:{before:560,after:280} } },
@@ -1096,18 +1096,23 @@ Click **Generate .docx** to download your styled Word document."></textarea>
       sections(els, meta) {
         const { Paragraph, TextRun, Header, Footer, AlignmentType, PageNumber, SectionType, BorderStyle } = window.docx;
         const bgImg = makeDocxBgImage(modernCoverImg());
+        const date  = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+        const A4 = { width:11906, height:16838 };
         return [
           {
-            properties: { type:SectionType.NEXT_PAGE, page:{ margin:{top:0,right:0,bottom:0,left:0} } },
+            properties: { type:SectionType.NEXT_PAGE, page:{ size:A4, margin:{top:0,right:0,bottom:0,left:0} } },
             children: [
               new Paragraph({ spacing:{before:0,after:0,line:240}, children:[bgImg] }),
               new Paragraph({ text:meta.title||'Document Title', style:'BMCoverTitle' }),
-              new Paragraph({ text:meta.author||'Author', style:'BMCoverSub' }),
-              new Paragraph({ text:new Date().toLocaleDateString(), style:'BMCoverSub' })
+              new Paragraph({ children:[
+                new TextRun({ text:(meta.author||'Author'), font:'Helvetica', size:28, color:'888888' }),
+                new TextRun({ text:'   ·   ', font:'Helvetica', size:28, color:'555555' }),
+                new TextRun({ text:date, font:'Helvetica', size:28, color:'888888' })
+              ], paragraph:{ spacing:{before:120,after:0}, alignment:AlignmentType.LEFT } })
             ]
           },
           {
-            properties: { type:SectionType.NEXT_PAGE, page:{ margin:{top:1440,right:1440,bottom:1440,left:1440} } },
+            properties: { type:SectionType.NEXT_PAGE, page:{ size:A4, margin:{top:1440,right:1440,bottom:1440,left:1440} } },
             headers: { default: new Header({ children:[new Paragraph({
               alignment:AlignmentType.LEFT,
               border:{bottom:{color:'22c55e',space:1,style:BorderStyle.SINGLE,size:6}},
@@ -1120,7 +1125,7 @@ Click **Generate .docx** to download your styled Word document."></textarea>
                         new TextRun({font:'Helvetica',size:18,color:'aaaaaa',children:[' / ']}),
                         new TextRun({font:'Helvetica',size:18,color:'aaaaaa',children:[PageNumber.TOTAL_PAGES]})]
             })] }) },
-            children: [new Paragraph({ text:'', pageBreakBefore:true }), ...els]
+            children: els
           }
         ];
       }
@@ -1138,7 +1143,8 @@ Click **Generate .docx** to download your styled Word document."></textarea>
         paragraphStyles: [
           { id:'BMCoverTitle', name:'BM Cover Title', basedOn:'Normal', next:'Normal', quickFormat:true,
             run:{ size:76, bold:true, color:'FFFFFF' },
-            paragraph:{ spacing:{before:9360,after:280}, alignment:window.docx.AlignmentType.CENTER } },
+            /* spacing.before: 42% of A4 height (16838) = 7072 → 7200, aligns title below the canvas diamond ornament */
+            paragraph:{ spacing:{before:7200,after:240}, alignment:window.docx.AlignmentType.CENTER } },
           { id:'BMCoverSub', name:'BM Cover Sub', basedOn:'Normal', next:'Normal', quickFormat:true,
             run:{ size:28, color:'DDDDDD', italic:true },
             paragraph:{ spacing:{before:120,after:100}, alignment:window.docx.AlignmentType.CENTER } },
@@ -1160,19 +1166,25 @@ Click **Generate .docx** to download your styled Word document."></textarea>
       sections(els, meta) {
         const { Paragraph, TextRun, Header, Footer, AlignmentType, PageNumber, SectionType, BorderStyle } = window.docx;
         const bgImg = makeDocxBgImage(premiumCoverImg());
+        const date  = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+        const A4 = { width:11906, height:16838 };
 
         return [
           {
-            properties:{ type:SectionType.NEXT_PAGE, page:{ margin:{top:0,right:0,bottom:0,left:0} } },
+            properties:{ type:SectionType.NEXT_PAGE, page:{ size:A4, margin:{top:0,right:0,bottom:0,left:0} } },
             children:[
               new Paragraph({ spacing:{before:0,after:0,line:240}, children:[bgImg] }),
               new Paragraph({ text:meta.title||'Document Title', style:'BMCoverTitle' }),
-              new Paragraph({ text:meta.author||'Author', style:'BMCoverSub' }),
-              new Paragraph({ text:new Date().toLocaleDateString(), style:'BMCoverSub' })
+              new Paragraph({ children:[
+                new TextRun({ text:meta.author||'Author', font:'Calibri', size:26, color:'DDDDDD', italics:true })
+              ], paragraph:{ spacing:{before:200,after:80}, alignment:AlignmentType.CENTER } }),
+              new Paragraph({ children:[
+                new TextRun({ text:date.toUpperCase(), font:'Calibri', size:20, color:'AAAAAA' })
+              ], paragraph:{ spacing:{before:80,after:0}, alignment:AlignmentType.CENTER } })
             ]
           },
           {
-            properties:{ type:SectionType.NEXT_PAGE, page:{ margin:{top:1440,right:1440,bottom:1440,left:1440} } },
+            properties:{ type:SectionType.NEXT_PAGE, page:{ size:A4, margin:{top:1440,right:1440,bottom:1440,left:1440} } },
             headers:{ default: new Header({ children:[new Paragraph({
               alignment:AlignmentType.RIGHT,
               border:{bottom:{color:'677659',space:1,style:BorderStyle.SINGLE,size:4}},
@@ -1187,7 +1199,7 @@ Click **Generate .docx** to download your styled Word document."></textarea>
                 new TextRun({font:'Calibri',size:18,color:'677659',children:[PageNumber.TOTAL_PAGES]})
               ]
             })] }) },
-            children:[ new Paragraph({ text:'', pageBreakBefore:true }), ...els ]
+            children: els
           }
         ];
       }
